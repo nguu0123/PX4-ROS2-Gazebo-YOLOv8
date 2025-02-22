@@ -9,6 +9,8 @@ kp.init()
 drone = System()
 
 roll, pitch, throttle, yaw = 0, 0, 0.5, 0
+
+
 async def getKeyboardInput(my_drone):
     global roll, pitch, throttle, yaw
     while True:
@@ -39,17 +41,22 @@ async def getKeyboardInput(my_drone):
         # print(roll, pitch, throttle, yaw)
         await asyncio.sleep(0.1)
 
+
 async def print_flight_mode(my_drone):
     async for flight_mode in my_drone.telemetry.flight_mode():
         print("FlightMode:", flight_mode)
         # return flight_mode
 
+
 async def manual_control_drone(my_drone):
     global roll, pitch, throttle, yaw
     while True:
         print(roll, pitch, throttle, yaw)
-        await my_drone.manual_control.set_manual_control_input(roll, pitch, throttle, yaw)
+        await my_drone.manual_control.set_manual_control_input(
+            roll, pitch, throttle, yaw
+        )
         await asyncio.sleep(0.1)
+
 
 async def run_drone():
     asyncio.ensure_future(getKeyboardInput(drone))
@@ -72,6 +79,7 @@ async def run():
     global roll, pitch, throttle, yaw
     """Main function to connect to the drone and input manual controls"""
     await asyncio.gather(run_drone())
+
 
 if __name__ == "__main__":
     # Start the main function

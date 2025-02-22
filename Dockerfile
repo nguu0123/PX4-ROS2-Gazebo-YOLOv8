@@ -78,9 +78,9 @@ RUN pip3 install \
   opencv-python \
   ultralytics
 
-# RUN  --mount=type=cache,target=/var/cache/apt,sharing=locked \
-#   --mount=type=cache,target=/var/lib/apt,sharing=locked \
-RUN apt-get install -y ros-humble-ros-gz
+RUN  --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt-get install -y ros-humble-ros-gz
 
 # Related to mismatch between numpy 2.x and numpy 1.x
 RUN pip3 uninstall -y numpy
