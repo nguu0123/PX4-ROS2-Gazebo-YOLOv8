@@ -141,11 +141,22 @@ export GZ_SIM_RESOURCE_PATH=~/.gz/models
 ```
 
 - Copy the content of models from main repo to ~/.gz/models
+
+```bash
+cp -r models ~/.gz
+```
+
 - Copy default.sdf from worlds folder in the main repo to ~/PX4-Autopilot/Tools/simulation/gz/worlds/
+
+```bash
+cp worlds/default.sdf $INSTALL_DIR/PX4-Autopilot/Tools/simulation/gz/worlds/
+```
+
 - Change the angle of Drone's camera for better visual:
 
 ```commandline
 # Go to ~/PX4-Autopilot/Tools/simulation/gz/models/x500_depth/model.sdf then change <pose> tag in line 9 from:
+vim $INSTALL_DIR/PX4-Autopilot/Tools/simulation/gz/models/x500_depth/model.sdf
 <pose>.12 .03 .242 0 0 0</pose>
 to:
 <pose>.15 .029 .21 0 0.7854 0</pose>
@@ -173,6 +184,7 @@ Terminal #4:
 source ~/px4-venv/bin/activate
 cd ~/PX4-ROS2-Gazebo-YOLOv8
 python uav_camera_det.py
+#NOTE: If error related to numpy>2, just uninstall numpy
 
 Terminal #5:
 source ~/px4-venv/bin/activate
