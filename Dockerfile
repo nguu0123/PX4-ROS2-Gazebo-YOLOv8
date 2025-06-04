@@ -1,18 +1,6 @@
 # Use the official ROS2 base image base including developing tools
 FROM ros:humble-ros-base-jammy
-#FROM osrf/ros:humble-desktop-full
 
-# Install necessary packages
-RUN rm /etc/apt/sources.list.d/ros2-latest.list && \
-  rm /usr/share/keyrings/ros2-latest-archive-keyring.gpg
-
-RUN apt update && apt install -y curl ca-certificates 
-
-RUN export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}') ;\
-  curl -L -s -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo $VERSION_CODENAME)_all.deb" \
-  && apt-get update \
-  && apt-get install /tmp/ros2-apt-source.deb \
-  && rm -f /tmp/ros2-apt-source.deb
 RUN  --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
   apt-get update && apt-get install -y \
@@ -87,7 +75,7 @@ RUN mkdir -p /root/ws_offboard_control/src && \
   /bin/bash -c "source /opt/ros/humble/setup.bash && cd /root/ws_offboard_control && colcon build"
 
 # Install Python requirements. If you don't have gpu, uncomment next line -torch cpu installation-
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+#RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 RUN pip3 install \
   mavsdk \
@@ -125,4 +113,4 @@ COPY px4_ros2_gazebo.yml /root/.config/tmuxinator/px4_ros2_gazebo.yml
 RUN echo "export PATH=\$PATH:/root/.local/bin" >> /root/.bashrc
 
 # Set default command to start tmuxinator
-CMD ["tmuxinator", "start", "px4_ros2_gazebo"]
+# CMD ["tmuxinator", "start", "px4_ros2_gazebo"]
