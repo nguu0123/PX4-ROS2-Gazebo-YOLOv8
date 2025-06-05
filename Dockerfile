@@ -1,5 +1,30 @@
 # Use the official ROS2 base image base including developing tools
-FROM ros:humble-ros-base-jammy
+FROM ubuntu:jammy
+
+ENV DEBIAN_FRONTEND=noninteractive \
+  LANG=en_US.UTF-8 \
+  LC_ALL=en_US.UTF-8
+
+RUN  --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt update && apt install -y \
+  locales \
+  software-properties-common \
+  curl \
+  && locale-gen en_US en_US.UTF-8 \
+  && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+
+RUN add-apt-repository universe
+
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" > /etc/apt/sources.list.d/ros2.list
+
+RUN  --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt update && apt upgrade -y && \
+  apt install -y ros-humble-desktop ros-dev-tools
+
+RUN echo "source /opt/ros/humble/setup.bash" >> /root/.bashrc
 
 RUN  --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -41,8 +66,9 @@ WORKDIR /root/PX4-Autopilot
 
 RUN  --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  bash ./Tools/setup/ubuntu.sh && \
-  make px4_sitl
+  bash ./Tools/setup/ubuntu.sh
+
+RUN QT_QPA_PLATFORM=xcb make px4_sitl
 
 # Setup Micro XRCE-DDS Agent & Client
 WORKDIR /root 
@@ -111,6 +137,9 @@ COPY px4_ros2_gazebo.yml /root/.config/tmuxinator/px4_ros2_gazebo.yml
 
 # Set up tmuxinator
 RUN echo "export PATH=\$PATH:/root/.local/bin" >> /root/.bashrc
+
+#NOTE: without this, won't be able to publish the image
+RUN apt update && apt install ros-humble-ros-gzgarden -y
 
 # Set default command to start tmuxinator
 # CMD ["tmuxinator", "start", "px4_ros2_gazebo"]
