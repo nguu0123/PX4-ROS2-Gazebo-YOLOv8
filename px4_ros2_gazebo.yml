@@ -18,13 +18,13 @@ windows:
       layout: even-vertical
       panes:
         - sleep 6 && ros2 run ros_gz_image image_bridge /camera
-  - YOLO_Detection:
-      root: /root/PX4-ROS2-Gazebo-YOLOv8
-      layout: even-vertical
-      panes:
-        - sleep 6 && python3 uav_camera_det.py
-  - MAVSDK_Control:
-      root: /root/PX4-ROS2-Gazebo-YOLOv8
-      layout: even-vertical
-      panes:
-        - sleep 6 && python3 keyboard-mavsdk-test.py
+  # - YOLO_Detection:
+  #     root: /root/PX4-ROS2-Gazebo-YOLOv8
+  #     layout: even-vertical
+  #     panes:
+  #       - sleep 6 && python3 uav_camera_det.py
+  # - MAVSDK_Control:
+  #     root: /root/PX4-ROS2-Gazebo-YOLOv8
+  #     layout: even-vertical
+  #     panes:
+  #       - sleep 6 && python3 keyboard-mavsdk-test.py
