@@ -48,8 +48,10 @@ class UAVCameraDetector(Node):
                 x1, y1, x2, y2 = map(float, box[:4])
                 conf = float(detections.conf[i])
                 cls = int(detections.cls[i])
+                label = self.model.names[cls]
                 formatted.append({
                     "class_id": cls,
+                    "class_name": label,
                     "confidence": conf,
                     "bbox": [x1, y1, x2, y2]
                 })
