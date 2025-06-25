@@ -16,10 +16,10 @@ class UAVCameraDetector(Node):
         self.model = YOLO('yolov8n.pt')  # use correct model path
         self.subscription = self.create_subscription(
             Image,
-            '/camera/image_raw',  # adjust if using /camera/compressed
+            'camera',  # adjust if using /camera/compressed
             self.image_callback,
             10)
-        self.get_logger().info("✅ YOLO node initialized and subscribed to /camera/image_raw")
+        self.get_logger().info("✅ YOLO node initialized and subscribed to camera")
 
     def image_callback(self, msg):
         self.get_logger().info("📸 Image received")
