@@ -10,7 +10,7 @@ import numpy as np
 
 # Adjust this if your drone ID or server IP/port changes
 DRONE_ID = 1
-SERVER_URL = "http://host.docker.internal:5000/detections"  # host.docker.internal works in Docker Desktop
+SERVER_URL = 'http://172.17.0.1:5000/detections' # host.docker.internal works in Docker Desktop
 
 class DroneDetector(Node):
     def __init__(self):
