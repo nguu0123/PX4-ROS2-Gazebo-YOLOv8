@@ -7,37 +7,41 @@ import requests
 from ultralytics import YOLO
 import time
 
-# Set this to your actual server URL
-SERVER_URL = 'http://172.17.0.1:5000/detections'
+SERVER_URL = 'http://172.17.0.1:5000/detections'  # change if needed
 
 class UAVCameraDetector(Node):
     def __init__(self):
         super().__init__('uav_camera_detector')
+        self.bridge = CvBridge()
+        self.model = YOLO('yolov8n.pt')  # use correct model path
         self.subscription = self.create_subscription(
             Image,
-            '/camera/image_raw',  # or change to match your topic
+            '/camera/image_raw',  # adjust if using /camera/compressed
             self.image_callback,
             10)
-        self.bridge = CvBridge()
-        self.model = YOLO('yolov8n.pt')  # or path to custom model
-        self.drone_id = 1
+        self.get_logger().info("✅ YOLO node initialized and subscribed to /camera/image_raw")
 
     def image_callback(self, msg):
+        self.get_logger().info("📸 Image received")
+
         try:
             cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         except Exception as e:
-            self.get_logger().error(f"Failed to convert image: {e}")
+            self.get_logger().error(f"❌ cv_bridge failed: {e}")
             return
 
-        # Run detection with timing
-        start_time = time.time()
-        results = self.model(cv_image)
-        end_time = time.time()
+        try:
+            start_time = time.time()
+            results = self.model(cv_image)
+            end_time = time.time()
+            self.get_logger().info("✅ YOLO inference done")
+        except Exception as e:
+            self.get_logger().error(f"❌ YOLO failed: {e}")
+            return
 
-        speed_info = results[0].speed  # {'preprocess': x, 'inference': y, 'postprocess': z}
+        speed_info = results[0].speed
         detections = results[0].boxes
 
-        # Format detections
         if detections and len(detections.xyxy) > 0:
             formatted = []
             for i, box in enumerate(detections.xyxy):
@@ -53,7 +57,7 @@ class UAVCameraDetector(Node):
             formatted = []
 
         payload = {
-            "drone_id": self.drone_id,
+            "drone_id": 1,
             "timestamp": time.time(),
             "inference_time_ms": round((end_time - start_time) * 1000, 2),
             "speed": {
@@ -64,14 +68,14 @@ class UAVCameraDetector(Node):
             "detections": formatted
         }
 
-        print("📤 Sending detection data to server:")
+        print("\n📤 SENDING PAYLOAD TO SERVER:")
         print(payload)
 
         try:
-            response = requests.post(SERVER_URL, json=payload, timeout=1)
+            response = requests.post(SERVER_URL, json=payload, timeout=2)
             print(f"✅ Server responded: {response.status_code} - {response.text}")
         except Exception as e:
-            print(f"❌ Failed to send detection: {e}")
+            print(f"❌ Failed to POST to server: {e}")
 
 def main(args=None):
     rclpy.init(args=args)
