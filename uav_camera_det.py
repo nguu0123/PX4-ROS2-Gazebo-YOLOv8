@@ -2,61 +2,67 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-import cv2
+import time
+import os
+import json
 import requests
 from ultralytics import YOLO
-import time
-
-SERVER_URL = 'http://172.17.0.1:5000/detections'  # change if needed
 
 class UAVCameraDetector(Node):
     def __init__(self):
         super().__init__('uav_camera_detector')
         self.bridge = CvBridge()
-        self.model = YOLO('yolov8n.pt')  # use correct model path
+
+        # Load YOLO model
+        self.model = YOLO('yolov8n.pt')  # Adjust path if needed
+
+        # Subscribe to ROS image topic
         self.subscription = self.create_subscription(
             Image,
-            'camera',  # adjust if using /camera/compressed
+            'camera',  # Adjust topic name if needed
             self.image_callback,
             10)
-        self.get_logger().info("✅ YOLO node initialized and subscribed to camera")
+        self.get_logger().info("YOLO node initialized and subscribed to 'camera' topic")
+
+        # Backend detection receiver endpoint
+        self.backend_url = os.getenv('BACKEND_URL', 'http://localhost:8000/receive_detection')
+        self.get_logger().info(f"Backend URL set to: {self.backend_url}")
 
     def image_callback(self, msg):
-        self.get_logger().info("📸 Image received")
+        self.get_logger().info("Image received")
 
         try:
             cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         except Exception as e:
-            self.get_logger().error(f"❌ cv_bridge failed: {e}")
+            self.get_logger().error(f"cv_bridge conversion failed: {e}")
             return
 
         try:
             start_time = time.time()
             results = self.model(cv_image)
             end_time = time.time()
-            self.get_logger().info("✅ YOLO inference done")
+            self.get_logger().info("YOLO inference completed")
         except Exception as e:
-            self.get_logger().error(f"❌ YOLO failed: {e}")
+            self.get_logger().error(f"YOLO inference failed: {e}")
             return
 
-        speed_info = results[0].speed
-        detections = results[0].boxes
+        result = results[0]
+        speed_info = result.speed
+        detections = result.boxes
 
+        formatted_detections = []
         if detections and len(detections.xyxy) > 0:
-            formatted = []
             for i, box in enumerate(detections.xyxy):
                 x1, y1, x2, y2 = map(float, box[:4])
                 conf = float(detections.conf[i])
                 cls = int(detections.cls[i])
-                label = self.model.names[cls]
-                formatted.append({
+                label = self.model.names.get(cls, f"class_{cls}")
+                formatted_detections.append({
                     "class_id": cls,
                     "class_name": label,
-                    "confidence": conf,
+                    "confidence": round(conf, 4),
                     "bbox": [x1, y1, x2, y2]
                 })
-        else:
-            formatted = []
 
         payload = {
             "drone_id": 1,
@@ -67,24 +73,28 @@ class UAVCameraDetector(Node):
                 "inference": round(speed_info['inference'], 2),
                 "postprocess": round(speed_info['postprocess'], 2)
             },
-            "detections": formatted
+            "detections": formatted_detections
         }
 
-        print("\n📤 SENDING PAYLOAD TO SERVER:")
-        print(payload)
+        self.get_logger().info("Sending detection payload to backend...")
+        self.get_logger().debug(json.dumps(payload, indent=2))
 
         try:
-            response = requests.post(SERVER_URL, json=payload, timeout=2)
-            print(f"✅ Server responded: {response.status_code} - {response.text}")
+            response = requests.post(self.backend_url, json=payload, timeout=2)
+            self.get_logger().info(f"Backend response: {response.status_code} - {response.text}")
         except Exception as e:
-            print(f"❌ Failed to POST to server: {e}")
+            self.get_logger().error(f"Failed to send detection to backend: {e}")
 
 def main(args=None):
     rclpy.init(args=args)
     node = UAVCameraDetector()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        node.get_logger().info("Keyboard interrupt received, shutting down node.")
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
