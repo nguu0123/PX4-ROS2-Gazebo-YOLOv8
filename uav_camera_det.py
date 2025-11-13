@@ -25,7 +25,8 @@ class UAVCameraDetector(Node):
         self.get_logger().info("YOLO node initialized and subscribed to 'camera' topic")
 
         # Backend detection receiver endpoint
-        self.backend_url = os.getenv('BACKEND_URL', 'http://localhost:8000/receive_detection')
+        self.backend_origin = os.getenv('BACKEND_ORIGIN')
+        self.backend_url = self.backend_origin + '/receive_detection'
         self.get_logger().info(f"Backend URL set to: {self.backend_url}")
 
     def image_callback(self, msg):
